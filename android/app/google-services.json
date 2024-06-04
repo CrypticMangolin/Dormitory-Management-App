@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "945886561040",
+    "project_id": "golekost-3bed9",
+    "storage_bucket": "golekost-3bed9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:945886561040:android:c74a8550d9586de9299b95",
+        "android_client_info": {
+          "package_name": "com.example.golek_kos_client"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAq0hUeHeMvWvQtzqqCELpTz5-YnynVvig"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
