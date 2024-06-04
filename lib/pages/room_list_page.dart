@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../model/room_data.dart';
 import '../services/firestore_service.dart';
-import 'add_room_page.dart';
-import 'edit_room_page.dart';
+import '../widget/room_card.dart';
+import 'detail_page.dart';
+import 'add_edit_room_page.dart';
 
 class RoomListPage extends StatefulWidget {
+  const RoomListPage({super.key});
+
   @override
   _RoomListPageState createState() => _RoomListPageState();
 }
@@ -17,12 +20,12 @@ class _RoomListPageState extends State<RoomListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Rooms List'),
+        title: const Text('Rooms List'),
         actions: [
           IconButton(
-            icon: Icon(Icons.add),
+            icon: const Icon(Icons.add),
             onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddRoomPage()));
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => const AddEditRoomPage()));
             },
           ),
         ],
@@ -35,7 +38,7 @@ class _RoomListPageState extends State<RoomListPage> {
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           final List<RoomData> rooms = snapshot.data!.docs.map((doc) {
@@ -46,38 +49,23 @@ class _RoomListPageState extends State<RoomListPage> {
             itemCount: rooms.length,
             itemBuilder: (context, index) {
               final room = rooms[index];
-              return Card(
-                child: ListTile(
-                  title: Text(room.name),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Description: ${room.description}'),
-                      Text('Price: ${room.price}'),
-                      Text('Facilities: ${room.roomFacilities.map((f) => f.name).join(', ')}'),
-                    ],
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.edit),
-                        onPressed: () {
-                          Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) => EditRoomPage(room: room),
-                          ));
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () {
-                          _firestoreService.deleteRoom(room.id);
-                        },
-                      ),
-                    ],
-                  ),
-                  onTap: () {
-                    // Handle room tap
+              return GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (context) => RoomDetails(roomData: room)
+                      )
+                  );
+                },
+                child: RoomCard(
+                  room: room,
+                  onEdit: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => AddEditRoomPage(room: room),
+                    ));
+                  },
+                  onDelete: () {
+                    _firestoreService.deleteRoom(room.id, context);
                   },
                 ),
               );

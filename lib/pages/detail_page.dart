@@ -1,88 +1,76 @@
 import 'package:flutter/material.dart';
 
+import '../data/dummy.dart';
 import '../model/room_data.dart';
 import '../services/firestore_service.dart';
-import 'edit_room_page.dart';
+import '../widget/carousel_widget.dart';
+import 'add_edit_room_page.dart';
 
-class RoomDetails extends StatelessWidget {
+class RoomDetails extends StatefulWidget {
   final RoomData roomData;
   final FirestoreService firestoreService = FirestoreService();
 
   RoomDetails({Key? key, required this.roomData}) : super(key: key);
 
-  Future<void> deleteRoom(BuildContext context) async {
-    bool confirmed = await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Delete Room'),
-          content: Text('Are you sure you want to delete this room?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text('Delete'),
-            ),
-          ],
-        );
-      },
-    );
+  @override
+  _RoomDetailsState createState() => _RoomDetailsState();
+}
 
-    if (confirmed) {
-      try {
-        await firestoreService.deleteRoom(roomData.id);
-        Navigator.pop(context);
-      } catch (e) {
-        print('Error deleting room: $e');
-      }
+class _RoomDetailsState extends State<RoomDetails> {
+  bool _isOwnerView = true;
+  bool _isOccupied = false;
+
+  // TODO: Temporary Occupant Data
+  Map<String, dynamic> _occupantData = dummyOccupantData;
+
+  Future<void> deleteRoom(BuildContext context) async {
+    try {
+      await widget.firestoreService.deleteRoom(widget.roomData.id, context);
+      Navigator.pop(context);
+    } catch (e) {
+      print('Error deleting room: $e');
     }
   }
 
   Future<void> editRoom(BuildContext context) async {
-    bool confirmed = await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Edit Room'),
-          content: Text('Are you sure you want to edit this room?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text('Edit'),
-            ),
-          ],
-        );
-      },
-    );
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => AddEditRoomPage(room: widget.roomData),
+    ));
+  }
 
-    if (confirmed) {
-      Navigator.of(context).push(MaterialPageRoute(
-        builder: (context) => EditRoomPage(room: roomData),
-      ));
-    }
+  @override
+  void initState() {
+    super.initState();
+    _isOccupied =!widget.roomData.availability;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Room Details'),
+        title: const Text('Room Details'),
         actions: [
           IconButton(
-            icon: Icon(Icons.edit),
-            onPressed: () => editRoom(context),
+            // TODO: Temporary admin switch
+            icon: Icon(_isOwnerView? Icons.person : Icons.person_outline),
+            onPressed: () {
+              setState(() {
+                _isOwnerView =!_isOwnerView;
+              });
+            },
           ),
-          IconButton(
-            icon: Icon(Icons.delete),
-            onPressed: () => deleteRoom(context),
-          ),
+          _isOwnerView
+              ? IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () => editRoom(context),
+              )
+              : Container(),
+          _isOwnerView
+              ? IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () => deleteRoom(context),
+              )
+              : Container(),
         ],
       ),
       body: Padding(
@@ -91,65 +79,117 @@ class RoomDetails extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16.0),
-                child: Image.network(
-                  roomData.roomImages.isNotEmpty
-                      ? roomData.roomImages[0].imageLink
-                      : 'https://via.placeholder.com/400',
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+              child: CarouselWidget(
+                imageLinks: widget.roomData.roomImages
+                    .map((image) => image.imageLink)
+                    .toList(),
               ),
             ),
-            SizedBox(height: 16.0),
+            const SizedBox(height: 16.0),
             Text(
-              roomData.name,
-              style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
+              widget.roomData.name,
+              style: const TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 8.0),
+            const SizedBox(height: 8.0),
             Text(
-              roomData.description,
-              style: TextStyle(fontSize: 16.0),
+              widget.roomData.description,
+              style: const TextStyle(fontSize: 16.0),
             ),
-            SizedBox(height: 16.0),
+            const SizedBox(height: 16.0),
             Text(
-              'Harga: Rp ${roomData.price}/bulan',
-              style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+              'Harga: Rp ${widget.roomData.price}/bulan',
+              style: const TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 16.0),
-            Text(
-              'Availability: ${roomData.availability ? 'Available' : 'Not Available'}',
-              style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+            const SizedBox(height: 16.0),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Availability:',
+                  style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: Icon(_isOccupied? Icons.check_circle : Icons.cancel),
+                  onPressed: () {
+                    // TODO: Temporary occupied switch
+                    setState(() {
+                      _isOccupied =!_isOccupied;
+                    });
+                  },
+                ),
+              ],
             ),
-            SizedBox(height: 16.0),
-            Text(
+            const SizedBox(height: 16.0),
+            const Text(
               'Fasilitas:',
               style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 8.0),
+            const SizedBox(height: 8.0),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: roomData.roomFacilities.isNotEmpty
-                  ? roomData.roomFacilities
+              children: widget.roomData.roomFacilities.isNotEmpty
+                  ? widget.roomData.roomFacilities
                   .map((facility) => Text('- ${facility.name}'))
                   .toList()
                   : [
-                Text('- Free Wi-Fi'),
+                const Text('-'),
               ],
             ),
-            SizedBox(height: 16.0),
-            Center(
-              child: ElevatedButton(
-                onPressed: roomData.availability
-                    ? () {
-                  // TODO
-                }
-                    : null,
-                child: Text('Book Now'),
-              ),
-            ),
+            _isOccupied
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Occupant:',
+                        style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+                      ),
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  image: DecorationImage(
+                                    image: NetworkImage(_occupantData['photo']),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16.0),
+                              _isOwnerView
+                                  ? Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Name: ${_occupantData['name']}'),
+                                        Text('Email: ${_occupantData['email']}'),
+                                        Text('Phone Number: ${_occupantData['phoneNumber']}'),
+                                        Text('Entry Date: ${_occupantData['entryDate']}'),
+                                        Text('Payment Status: ${_occupantData['paymentStatus']?'Lunas':'Belum Lunas'}'),
+                                      ],
+                                    )
+                                    : Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${_occupantData['name']}',
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                            ],
+                          ),
+                        ),
+                      )
+                    ]
+                )
+                  : Container(),
           ],
         ),
       ),
