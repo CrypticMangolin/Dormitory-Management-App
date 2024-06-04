@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../model/room_data.dart';
 import '../services/firestore_service.dart';
+import 'edit_room_page.dart';
 
 class RoomDetails extends StatelessWidget {
   final RoomData roomData;
@@ -10,70 +11,62 @@ class RoomDetails extends StatelessWidget {
   RoomDetails({Key? key, required this.roomData}) : super(key: key);
 
   Future<void> deleteRoom(BuildContext context) async {
-    try {
-      await firestoreService.deleteRoom(roomData.id);
-      Navigator.pop(context);
-    } catch (e) {
-      print('Error deleting room: $e');
+    bool confirmed = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Delete Room'),
+          content: Text('Are you sure you want to delete this room?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed) {
+      try {
+        await firestoreService.deleteRoom(roomData.id);
+        Navigator.pop(context);
+      } catch (e) {
+        print('Error deleting room: $e');
+      }
     }
   }
 
   Future<void> editRoom(BuildContext context) async {
-    final nameController = TextEditingController(text: roomData.name);
-    final descriptionController =
-    TextEditingController(text: roomData.description);
-    final priceController = TextEditingController(text: roomData.price);
-
-    showDialog(
+    bool confirmed = await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit Room'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(labelText: 'Name'),
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Edit Room'),
+          content: Text('Are you sure you want to edit this room?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Cancel'),
             ),
-            TextField(
-              controller: descriptionController,
-              decoration: InputDecoration(labelText: 'Description'),
-            ),
-            TextField(
-              controller: priceController,
-              decoration: InputDecoration(labelText: 'Price'),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text('Edit'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                final updatedRoom = RoomData(
-                  id: roomData.id,
-                  name: nameController.text,
-                  description: descriptionController.text,
-                  price: priceController.text,
-                  roomImages: roomData.roomImages,
-                  roomFacilities: roomData.roomFacilities,
-                  availability: roomData.availability,
-                );
-                await firestoreService.updateRoom(roomData.id, updatedRoom);
-                print('SUCCESS');
-                Navigator.pop(context);
-              } catch (e) {
-                print('Error editing room: $e');
-              }
-            },
-            child: Text('Save'),
-          ),
-        ],
-      ),
+        );
+      },
     );
+
+    if (confirmed) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => EditRoomPage(room: roomData),
+      ));
+    }
   }
 
   @override
@@ -122,7 +115,7 @@ class RoomDetails extends StatelessWidget {
             ),
             SizedBox(height: 16.0),
             Text(
-              'Price: Rp ${roomData.price}/night',
+              'Harga: Rp ${roomData.price}/bulan',
               style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 16.0),
@@ -132,7 +125,7 @@ class RoomDetails extends StatelessWidget {
             ),
             SizedBox(height: 16.0),
             Text(
-              'Amenities:',
+              'Fasilitas:',
               style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8.0),
@@ -151,7 +144,7 @@ class RoomDetails extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: roomData.availability
                     ? () {
-                  // Add booking functionality here
+                  // TODO
                 }
                     : null,
                 child: Text('Book Now'),
